@@ -15,8 +15,6 @@ import org.example.incomeandexpensebackend.services.interfaces.AuthService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
-
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
@@ -34,7 +32,13 @@ public class AuthServiceImpl implements AuthService {
             throw new UnauthorizedException("Invalid email or password");
         }
 
-        String token = jwtUtil.generateToken(user.getEmail(), user.getFirstName(), user.getLastName(), String.valueOf(user.getRole()));
+        String token = jwtUtil.generateToken(
+                user.getId(),
+                user.getEmail(),
+                user.getFirstName(),
+                user.getLastName(),
+                String.valueOf(user.getRole())
+        );
 
         return new AuthResponseDto(token, user.getId(), user.getEmail(), user.getFirstName());
     }
@@ -74,8 +78,35 @@ public class AuthServiceImpl implements AuthService {
             throw new UnauthorizedException("New password and confirm password don't match!");
         }
 
+        if (req.getNewPassword().equals(req.getOldPassword())) {
+            throw new UnauthorizedException("New password cannot be the same as the old password!");
+        }
+
         user.setPassword(passwordEncoder.encode(req.getNewPassword()));
         userRepository.save(user);
     }
 
+    @Override
+    public Long getLoggedInUserId() {
+        String authHeader = httpServletRequest.getHeader("Authorization");
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new UnauthorizedException("Missing or invalid Authorization header");
+        }
+        String token = authHeader.substring(7);
+        var claims = jwtUtil.decodeToken(token); // do t’i krijojmë
+        Object id = claims.get("id");
+        if (id == null) throw new UnauthorizedException("Invalid token: no userId");
+        return Long.valueOf(id.toString());
+    }
+
+    @Override
+    public String getLoggedInUserRole() {
+        String authHeader = httpServletRequest.getHeader("Authorization");
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new UnauthorizedException("Missing or invalid Authorization header");
+        }
+        String token = authHeader.substring(7);
+        var claims = jwtUtil.decodeToken(token);
+        return claims.get("role", String.class);
+    }
 }

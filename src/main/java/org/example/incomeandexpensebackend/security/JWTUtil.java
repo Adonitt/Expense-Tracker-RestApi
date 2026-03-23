@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import io.jsonwebtoken.Claims;
 import java.util.Map;
 
 @Component
@@ -27,10 +28,11 @@ public class JWTUtil {
         secret = Keys.hmacShaKeyFor(secretString.getBytes(StandardCharsets.UTF_8));
     }
 
-    public String generateToken(String email, String name, String surname, String role) {
+    public String generateToken(Long id, String email, String name, String surname, String role) {
         return Jwts.builder()
                 .setSubject(email)
                 .addClaims(Map.of(
+                        "id", id,
                         "firstName", name,
                         "lastName", surname,
                         "email", email,
@@ -50,4 +52,10 @@ public class JWTUtil {
                 .getSubject();
     }
 
+    public Claims decodeToken(String token) {
+        return Jwts.parser()
+                .setSigningKey(secret)
+                .parseClaimsJws(token)
+                .getBody();
+    }
 }

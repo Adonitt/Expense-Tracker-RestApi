@@ -2,16 +2,17 @@ package org.example.incomeandexpensebackend.controllers;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import lombok.Value;
 import org.example.incomeandexpensebackend.dtos.auth.AuthResponseDto;
 import org.example.incomeandexpensebackend.dtos.auth.ChangePasswordDto;
 import org.example.incomeandexpensebackend.dtos.auth.LoginDto;
 import org.example.incomeandexpensebackend.dtos.user.CreateUserDto;
-import org.example.incomeandexpensebackend.services.implementations.AuthServiceImpl;
 import org.example.incomeandexpensebackend.services.interfaces.AuthService;
 import org.example.incomeandexpensebackend.services.interfaces.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -35,7 +36,9 @@ public class AuthController {
     public ResponseEntity<?> changePasswordDtoResponseEntity(@RequestBody @Valid ChangePasswordDto request) {
         String email = authService.getLoggedInUserEmail();
         authService.changePassword(request, email);
-        return ResponseEntity.ok("Password changed successfully");
+        Map<String, String> resp = new HashMap<>();
+        resp.put("message", "Password changed successfully");
+        return ResponseEntity.ok(resp);
     }
 
 }

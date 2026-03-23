@@ -41,7 +41,7 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/**", "/oauth2/**", "/login/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/users/**").hasRole(RoleEnum.ADMIN.name())
+                        .requestMatchers(HttpMethod.GET, "/api/v1/users/**").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/api/v1/users/edit/**").hasRole(RoleEnum.ADMIN.name())
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/users/**").hasRole(RoleEnum.ADMIN.name())
                         .anyRequest().authenticated()

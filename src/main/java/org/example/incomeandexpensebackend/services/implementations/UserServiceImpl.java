@@ -11,9 +11,11 @@ import org.example.incomeandexpensebackend.entities.UserEntity;
 import org.example.incomeandexpensebackend.enums.RoleEnum;
 import org.example.incomeandexpensebackend.exceptions.EmailExistsException;
 import org.example.incomeandexpensebackend.exceptions.PasswordsDoNotMatchException;
+import org.example.incomeandexpensebackend.exceptions.UnauthorizedException;
 import org.example.incomeandexpensebackend.mappers.UserMapper;
 import org.example.incomeandexpensebackend.repositories.TransactionRepository;
 import org.example.incomeandexpensebackend.repositories.UserRepository;
+import org.example.incomeandexpensebackend.services.interfaces.AuthService;
 import org.example.incomeandexpensebackend.services.interfaces.UserService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -28,6 +30,8 @@ public class UserServiceImpl implements UserService {
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
     private final TransactionRepository transactionRepository;
+    private final AuthService authService;
+
 
     @Override
     public CreateUserDto create(CreateUserDto dto) {
@@ -60,7 +64,16 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserDetailsDto findById(Long id) {
-        var user = userRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("User not found"));
+        UserEntity user = userRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+
+        Long loggedInUserId = authService.getLoggedInUserId();
+        String role = authService.getLoggedInUserRole();
+
+        if (!role.equals("ADMIN") && !loggedInUserId.equals(id)) {
+            throw new UnauthorizedException("You are not allowed to view this user");
+        }
+
         return userMapper.toUserDetailsDto(user);
     }
 

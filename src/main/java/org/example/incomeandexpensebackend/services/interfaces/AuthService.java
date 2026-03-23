@@ -14,4 +14,7 @@ public interface AuthService {
 
     void changePassword(ChangePasswordDto req, String userEmail);
 
+    Long getLoggedInUserId();
+
+    String getLoggedInUserRole();
 }

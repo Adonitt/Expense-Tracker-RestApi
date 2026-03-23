@@ -18,9 +18,9 @@ import java.time.LocalDateTime;
 @Component
 @RequiredArgsConstructor
 public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
+
     private final UserRepository userRepository;
     private final JWTUtil jwtUtil;
-
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
@@ -42,12 +42,19 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
             return userRepository.save(u);
         });
 
-        String token = jwtUtil.generateToken(user.getEmail(), user.getFirstName(), user.getLastName(), String.valueOf(user.getRole()));
-
-        response.sendRedirect(
-                "http://localhost:5173/oauth-success?token=" + token
+        String token = jwtUtil.generateToken(
+                user.getId(),
+                user.getEmail(),
+                user.getFirstName(),
+                user.getLastName(),
+                String.valueOf(user.getRole())
         );
 
+        String frontendUrl = System.getenv("FRONTEND_URL");
+        if (frontendUrl == null || frontendUrl.isEmpty()) {
+            frontendUrl = "http://localhost:5173";
+        }
+
+        response.sendRedirect(frontendUrl + "/oauth-success?token=" + token);
     }
 }
-
