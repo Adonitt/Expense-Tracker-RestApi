@@ -53,4 +53,14 @@ public class TransactionController {
         return new UpdateTransactionDto();
     }
 
+    @GetMapping("/filter")
+    public ResponseEntity<List<TransactionListingDto>> filterByDate(
+            @RequestParam int year,
+            @RequestParam int month,
+            @RequestParam(required = false) Integer day
+    ) {
+        return ResponseEntity.ok(service.findByYearMonthDay(year, month, day));
+    }
+
+
 }

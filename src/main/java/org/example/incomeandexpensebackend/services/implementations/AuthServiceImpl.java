@@ -4,6 +4,7 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.example.incomeandexpensebackend.dtos.auth.AuthResponseDto;
+import org.example.incomeandexpensebackend.dtos.auth.ChangePasswordDto;
 import org.example.incomeandexpensebackend.dtos.auth.LoginDto;
 import org.example.incomeandexpensebackend.entities.UserEntity;
 import org.example.incomeandexpensebackend.exceptions.UnauthorizedException;
@@ -13,6 +14,8 @@ import org.example.incomeandexpensebackend.security.JWTUtil;
 import org.example.incomeandexpensebackend.services.interfaces.AuthService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -31,7 +34,7 @@ public class AuthServiceImpl implements AuthService {
             throw new UnauthorizedException("Invalid email or password");
         }
 
-        String token = jwtUtil.generateToken(user.getEmail(), user.getFirstName(), user.getLastName());
+        String token = jwtUtil.generateToken(user.getEmail(), user.getFirstName(), user.getLastName(), String.valueOf(user.getRole()));
 
         return new AuthResponseDto(token, user.getId(), user.getEmail(), user.getFirstName());
     }
@@ -53,6 +56,26 @@ public class AuthServiceImpl implements AuthService {
         String token = authHeader.substring(7);
 
         return jwtUtil.validateTokenAndGetEmail(token);
+    }
+
+    @Override
+    public void changePassword(ChangePasswordDto req, String userEmail) {
+        var userExists = userRepository.findByEmail(userEmail);
+
+        if (userExists.isEmpty()) throw new UserNotFoundException("User not found");
+
+        UserEntity user = userExists.get();
+
+        if (!passwordEncoder.matches(req.getOldPassword(), user.getPassword())) {
+            throw new UnauthorizedException("Invalid old password");
+        }
+
+        if (!req.getNewPassword().equals(req.getConfirmPassword())) {
+            throw new UnauthorizedException("New password and confirm password don't match!");
+        }
+
+        user.setPassword(passwordEncoder.encode(req.getNewPassword()));
+        userRepository.save(user);
     }
 
 }

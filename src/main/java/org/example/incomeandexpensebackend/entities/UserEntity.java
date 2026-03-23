@@ -1,10 +1,15 @@
 package org.example.incomeandexpensebackend.entities;
 
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.example.incomeandexpensebackend.enums.RoleEnum;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -39,5 +44,24 @@ public class UserEntity {
     private LocalDateTime registeredAt;
 
     @Column(name = "isActive")
-    private Boolean isActive ;
+    private Boolean isActive;
+
+    @OneToMany(
+            mappedBy = "user",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true,
+            fetch = FetchType.LAZY
+    )
+    private List<TransactionEntity> transactions = new ArrayList<>();
+
+
+public void addTransaction(TransactionEntity transaction) {
+    transactions.add(transaction);
+    transaction.setUser(this);
+}
+
+public void removeTransaction(TransactionEntity transaction) {
+    transactions.remove(transaction);
+    transaction.setUser(null);
+}
 }

@@ -27,12 +27,14 @@ public class JWTUtil {
         secret = Keys.hmacShaKeyFor(secretString.getBytes(StandardCharsets.UTF_8));
     }
 
-    public String generateToken(String email, String name, String surname) {
+    public String generateToken(String email, String name, String surname, String role) {
         return Jwts.builder()
                 .setSubject(email)
                 .addClaims(Map.of(
                         "firstName", name,
-                        "lastName", surname
+                        "lastName", surname,
+                        "email", email,
+                        "role", role
                 ))
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + expiration))

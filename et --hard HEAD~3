@@ -1,0 +1,18 @@
+[33m8d72012[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m remove secrets and use env variables
+[33m79fade9[m .env file config
+[33m133645e[m change password
+[33m667b565[m filter transaction by date
+[33m7943dcb[m bug fix - delete user
+[33mf152fbd[m Merge remote-tracking branch 'origin/main'
+[33ma508a5f[m implemented oauth2 login
+[33mff0f96a[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Update README to include React repo link
+[33ma658535[m created a system admin if no one exists
+[33ma4f733b[m made jwtAuthFilter and allowed user and admin access http requests based on role, allowed user to access only its transactions and debts, admin has full access
+[33m1b3dee1[m Merge remote-tracking branch 'origin/main'
+[33m37ea01c[m implemented services and controllers for transactions and debts and tested with POSTMAN - everything OK! :)
+[33m7a9e5a2[m Revise README for improved clarity and detail
+[33m0f88128[m Revise README for project title and features
+[33mdc5dc6b[m managed auth for user
+[33m1549662[m removed category table, created debt entity and managed CRUD for user
+[33m30b0392[m created entities, dtos, mappers, repositories, base-service logic and ready to implement
+[33md1cb04f[m first commit

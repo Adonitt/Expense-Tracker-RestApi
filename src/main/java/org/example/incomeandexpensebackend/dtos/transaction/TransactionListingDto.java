@@ -18,6 +18,8 @@ public class TransactionListingDto {
 
     private Long userId;
 
+    private String userFullName;
+
     private double amount;
 
     private TransactionTypeEnum type;

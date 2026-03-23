@@ -18,6 +18,7 @@ public interface TransactionMapper {
 
     @Mapping(target = "userId", expression = "java(entity.getUser().getId())")
     @Mapping(target = "debtId", expression = "java(entity.getDebt() != null ? entity.getDebt().getId() : null)")
+    @Mapping(target = "userFullName", expression = "java(entity.getUser().getFirstName() + \" \" + entity.getUser().getLastName())")
     TransactionListingDto toTransactionListingDto(TransactionEntity entity);
 
     List<TransactionListingDto> toTransactionListingDtoList(List<TransactionEntity> transactionEntities);

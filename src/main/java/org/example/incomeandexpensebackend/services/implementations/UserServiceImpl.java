@@ -7,6 +7,7 @@ import org.example.incomeandexpensebackend.dtos.user.CreateUserDto;
 import org.example.incomeandexpensebackend.dtos.user.UpdateUserDto;
 import org.example.incomeandexpensebackend.dtos.user.UserDetailsDto;
 import org.example.incomeandexpensebackend.dtos.user.UserListingDto;
+import org.example.incomeandexpensebackend.entities.UserEntity;
 import org.example.incomeandexpensebackend.enums.RoleEnum;
 import org.example.incomeandexpensebackend.exceptions.EmailExistsException;
 import org.example.incomeandexpensebackend.exceptions.PasswordsDoNotMatchException;
@@ -81,8 +82,11 @@ public class UserServiceImpl implements UserService {
     @Transactional
     @Override
     public void removeById(Long id) {
-        findById(id);
-        transactionRepository.deleteByUserId(id);
-        userRepository.deleteById(id);
+        UserEntity user = userRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+
+        transactionRepository.deleteAll(user.getTransactions());
+
+        userRepository.delete(user);
     }
 }

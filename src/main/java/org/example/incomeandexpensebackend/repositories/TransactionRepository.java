@@ -4,6 +4,7 @@ import org.example.incomeandexpensebackend.entities.TransactionEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -13,7 +14,17 @@ public interface TransactionRepository extends JpaRepository<TransactionEntity, 
 
     void deleteByDebtId(Long debtId);
 
-    void deleteByUserId(Long id);
-
     List<TransactionEntity> findByUserId(Long id);
+
+    List<TransactionEntity> findByDateBetween(
+            LocalDate start,
+            LocalDate end
+    );
+
+    List<TransactionEntity> findByUserIdAndDateBetween(
+            Long userId,
+            LocalDate start,
+            LocalDate end
+    );
+
 }

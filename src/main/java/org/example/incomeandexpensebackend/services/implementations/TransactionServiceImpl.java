@@ -10,6 +10,7 @@ import org.example.incomeandexpensebackend.entities.TransactionEntity;
 import org.example.incomeandexpensebackend.entities.UserEntity;
 import org.example.incomeandexpensebackend.enums.CategoryEnum;
 import org.example.incomeandexpensebackend.enums.RoleEnum;
+import org.example.incomeandexpensebackend.exceptions.DateAllowanceException;
 import org.example.incomeandexpensebackend.exceptions.DebtTransactionException;
 import org.example.incomeandexpensebackend.exceptions.UnauthorizedException;
 import org.example.incomeandexpensebackend.mappers.TransactionMapper;
@@ -19,6 +20,7 @@ import org.example.incomeandexpensebackend.services.interfaces.AuthService;
 import org.example.incomeandexpensebackend.services.interfaces.TransactionService;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -36,8 +38,15 @@ public class TransactionServiceImpl implements TransactionService {
         UserEntity user = userRepository.findByEmail(email).orElseThrow(() -> new EntityNotFoundException("User not found"));
 
         var entity = mapper.toEntity(dto);
+
+        if (entity.getDate().isAfter(LocalDate.now())) {
+            throw new DateAllowanceException("It is not allowed to add a transaction for next months!");
+        }
+
         entity.setUser(user);
         entity.setCreatedAt(LocalDateTime.now());
+        user.addTransaction(entity);
+
 
         var saved = transactionRepository.save(entity);
         return mapper.toCreateDto(saved);
@@ -86,6 +95,11 @@ public class TransactionServiceImpl implements TransactionService {
         if (entity.getCategory() == CategoryEnum.DEBT) {
             throw new DebtTransactionException("This is a DEBT and cannot be updated as transaction, only in the DEBT section!");
         }
+
+        if (dto.getDate().isAfter(LocalDate.now())) {
+            throw new DateAllowanceException("It is not allowed to add a transaction for next months!");
+        }
+
         entity.setAmount(dto.getAmount());
         entity.setType(dto.getType());
         entity.setCategory(dto.getCategory());
@@ -106,4 +120,31 @@ public class TransactionServiceImpl implements TransactionService {
         }
         transactionRepository.deleteById(id);
     }
+
+    @Override
+    public List<TransactionListingDto> findByYearMonthDay(int year, int month, Integer day) {
+        LocalDate start = LocalDate.of(year, month, 1);
+        LocalDate end = start.withDayOfMonth(start.lengthOfMonth());
+
+        String email = authService.getLoggedInUserEmail();
+        UserEntity user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+
+        List<TransactionEntity> transactions;
+
+        if (day != null) {
+            LocalDate specificDay = LocalDate.of(year, month, day);
+            transactions = user.getRole() == RoleEnum.ADMIN
+                    ? transactionRepository.findByDateBetween(specificDay, specificDay)
+                    : transactionRepository.findByUserIdAndDateBetween(user.getId(), specificDay, specificDay);
+        } else {
+            transactions = user.getRole() == RoleEnum.ADMIN
+                    ? transactionRepository.findByDateBetween(start, end)
+                    : transactionRepository.findByUserIdAndDateBetween(user.getId(), start, end);
+        }
+
+        return mapper.toTransactionListingDtoList(transactions);
+    }
+
+
 }
