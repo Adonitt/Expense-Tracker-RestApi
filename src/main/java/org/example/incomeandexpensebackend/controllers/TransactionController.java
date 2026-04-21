@@ -9,6 +9,7 @@ import org.example.incomeandexpensebackend.services.interfaces.TransactionServic
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -54,12 +55,11 @@ public class TransactionController {
     }
 
     @GetMapping("/filter")
-    public ResponseEntity<List<TransactionListingDto>> filterByDate(
-            @RequestParam int year,
-            @RequestParam int month,
-            @RequestParam(required = false) Integer day
+    public List<TransactionListingDto> getByDateRange(
+            @RequestParam LocalDate fromDate,
+            @RequestParam LocalDate toDate
     ) {
-        return ResponseEntity.ok(service.findByYearMonthDay(year, month, day));
+        return service.findByDateRange(fromDate, toDate);
     }
 
 

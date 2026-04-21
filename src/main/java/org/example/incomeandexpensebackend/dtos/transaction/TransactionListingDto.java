@@ -24,6 +24,8 @@ public class TransactionListingDto {
 
     private TransactionTypeEnum type;
 
+    private String description;
+
     private LocalDate date;
 
     private CategoryEnum category;

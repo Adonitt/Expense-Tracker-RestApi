@@ -121,10 +121,10 @@ public class TransactionServiceImpl implements TransactionService {
         transactionRepository.deleteById(id);
     }
 
+
+
     @Override
-    public List<TransactionListingDto> findByYearMonthDay(int year, int month, Integer day) {
-        LocalDate start = LocalDate.of(year, month, 1);
-        LocalDate end = start.withDayOfMonth(start.lengthOfMonth());
+    public List<TransactionListingDto> findByDateRange(LocalDate fromDate, LocalDate toDate) {
 
         String email = authService.getLoggedInUserEmail();
         UserEntity user = userRepository.findByEmail(email)
@@ -132,19 +132,14 @@ public class TransactionServiceImpl implements TransactionService {
 
         List<TransactionEntity> transactions;
 
-        if (day != null) {
-            LocalDate specificDay = LocalDate.of(year, month, day);
-            transactions = user.getRole() == RoleEnum.ADMIN
-                    ? transactionRepository.findByDateBetween(specificDay, specificDay)
-                    : transactionRepository.findByUserIdAndDateBetween(user.getId(), specificDay, specificDay);
+        if (user.getRole() == RoleEnum.ADMIN) {
+            transactions = transactionRepository.findByDateBetween(fromDate, toDate);
         } else {
-            transactions = user.getRole() == RoleEnum.ADMIN
-                    ? transactionRepository.findByDateBetween(start, end)
-                    : transactionRepository.findByUserIdAndDateBetween(user.getId(), start, end);
+            transactions = transactionRepository.findByUserIdAndDateBetween(
+                    user.getId(), fromDate, toDate
+            );
         }
 
         return mapper.toTransactionListingDtoList(transactions);
     }
-
-
 }
