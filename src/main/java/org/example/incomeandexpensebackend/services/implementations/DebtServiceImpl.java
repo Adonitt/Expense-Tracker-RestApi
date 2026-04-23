@@ -1,14 +1,14 @@
 package org.example.incomeandexpensebackend.services.implementations;
 
-import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.example.incomeandexpensebackend.dtos.debt.DebtDto;
+import org.example.incomeandexpensebackend.dtos.debt.PayDebtDto;
+import org.example.incomeandexpensebackend.dtos.debt.UpdateDebtDto;
 import org.example.incomeandexpensebackend.entities.DebtEntity;
 import org.example.incomeandexpensebackend.entities.TransactionEntity;
 import org.example.incomeandexpensebackend.entities.UserEntity;
 import org.example.incomeandexpensebackend.enums.*;
-import org.example.incomeandexpensebackend.exceptions.UnauthorizedException;
 import org.example.incomeandexpensebackend.mappers.DebtMapper;
 import org.example.incomeandexpensebackend.repositories.DebtRepository;
 import org.example.incomeandexpensebackend.repositories.TransactionRepository;
@@ -17,124 +17,189 @@ import org.example.incomeandexpensebackend.services.interfaces.AuthService;
 import org.example.incomeandexpensebackend.services.interfaces.DebtService;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class DebtServiceImpl implements DebtService {
+
     private final DebtRepository debtRepository;
     private final DebtMapper debtMapper;
     private final TransactionRepository transactionRepository;
     private final AuthService authService;
     private final UserRepository userRepository;
 
+    // 🔥 GET LOGGED USER
+    private UserEntity getLoggedUser() {
+        String email = authService.getLoggedInUserEmail();
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
+    // 🔥 SECURITY CHECK
+    private void checkOwnership(DebtEntity debt, UserEntity user) {
+        if (user.getRole() != RoleEnum.ADMIN &&
+                !debt.getUser().getId().equals(user.getId())) {
+            throw new RuntimeException("Unauthorized access");
+        }
+    }
+
     @Override
     public DebtDto create(DebtDto dto) {
-        var debt = debtMapper.toEntity(dto);
+
+        UserEntity user = getLoggedUser();
+
+        DebtEntity debt = new DebtEntity();
+        debt.setUser(user); // 🔥 IMPORTANT
+        debt.setAmount(dto.getAmount());
+        debt.setRemainingAmount(dto.getAmount());
+        debt.setPaidAmount(0);
+        debt.setPerson(dto.getPerson());
+        debt.setDescription(dto.getDescription());
+        debt.setType(dto.getType());
+        debt.setStatus(dto.getStatus() != null ? dto.getStatus() : DebtStatus.PENDING);
+        debt.setDate(dto.getDate());
         debt.setCreatedAt(LocalDateTime.now());
 
-        TransactionEntity transactionEntity = new TransactionEntity();
-        transactionEntity.setCategory(CategoryEnum.DEBT);
-        transactionEntity.setAmount(dto.getAmount());
-        transactionEntity.setDate(dto.getDate());
-        transactionEntity.setDescription(dto.getDescription());
-        transactionEntity.setCreatedAt(LocalDateTime.now());
+        DebtEntity savedDebt = debtRepository.save(debt);
 
-        String email = authService.getLoggedInUserEmail();
+        // 🔥 INITIAL TRANSACTION
+        TransactionEntity tx = new TransactionEntity();
+        tx.setUser(user);
+        tx.setAmount(dto.getAmount());
+        tx.setDate(dto.getDate());
+        tx.setDescription("Initial debt");
+        tx.setCategory(CategoryEnum.DEBT);
+        tx.setDebt(savedDebt);
 
-        if (debt.getType() == DebtTypeEnum.LENT) {
-            transactionEntity.setType(TransactionTypeEnum.EXPENSE);
-        } else if (debt.getType() == DebtTypeEnum.BORROWED) {
-            transactionEntity.setType(TransactionTypeEnum.INCOME);
-        }
+        tx.setType(debt.getType() == DebtTypeEnum.LENT
+                ? TransactionTypeEnum.EXPENSE
+                : TransactionTypeEnum.INCOME);
 
-        var savedDebt = debtRepository.save(debt);
-
-        transactionEntity.setDebt(savedDebt);
-        savedDebt.setTransaction(transactionEntity);
-
-        UserEntity loggedInUser = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        transactionEntity.setUser(loggedInUser);
-
-        transactionRepository.save(transactionEntity);
+        transactionRepository.save(tx);
 
         return debtMapper.toDto(savedDebt);
     }
 
-
     @Override
     public List<DebtDto> findAll() {
-        String email = authService.getLoggedInUserEmail();
-        UserEntity user = userRepository.findByEmail(email).orElseThrow(() -> new EntityNotFoundException("User doesn't exists!"));
 
-        List<DebtEntity> debtEntityList;
+        UserEntity user = getLoggedUser();
+
+        List<DebtEntity> debts;
 
         if (user.getRole() == RoleEnum.ADMIN) {
-            debtEntityList = debtRepository.findAll();
+            debts = debtRepository.findAll();
         } else {
-            debtEntityList = debtRepository.findByTransactionUserId(user.getId());
+            debts = debtRepository.findByUserId(user.getId());
         }
 
-        return debtMapper.toDtoList(debtEntityList);
+        return debtMapper.toDtoList(debts);
     }
 
     @Override
     public DebtDto findById(Long id) {
-        var debt = debtRepository.findById(id).orElseThrow(() -> new RuntimeException("Debt not found"));
 
-        String email = authService.getLoggedInUserEmail();
-        UserEntity user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
+        UserEntity user = getLoggedUser();
 
-        if (user.getRole() != RoleEnum.ADMIN && !debt.getTransaction().getUser().getId().equals(user.getId())) {
-            throw new UnauthorizedException("You are not allowed to access this debt");
-        }
+        DebtEntity debt = debtRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Debt not found"));
 
-        return debtMapper.toDto(debt);
-    }
-
-    @Override
-    public DebtDto update(Long id, DebtDto dto) {
-        var debt = debtRepository.findById(id).orElseThrow(() -> new RuntimeException("Debt not found"));
-        debt.setAmount(dto.getAmount());
-        debt.setPerson(dto.getPerson());
-        debt.setDescription(dto.getDescription());
-        debt.setStatus(dto.getStatus());
-        debt.setType(dto.getType());
-        debt.setDate(dto.getDate());
-        debt.setUpdatedAt(LocalDateTime.now());
-
-        TransactionEntity transaction = transactionRepository.findByDebtId(debt.getId()).orElseThrow(() -> new EntityNotFoundException("Transaction for debt not found"));
-
-        if (debt.getType() == DebtTypeEnum.LENT) {
-            transaction.setType(TransactionTypeEnum.EXPENSE);
-            debt.setStatus(DebtStatus.PAID);
-        } else if (debt.getType() == DebtTypeEnum.BORROWED) {
-            transaction.setType(TransactionTypeEnum.INCOME);
-            debt.setStatus(DebtStatus.PENDING);
-        }
-
-        transaction.setAmount(dto.getAmount());
-        transaction.setDate(dto.getDate());
-        transaction.setDescription(dto.getDescription());
-        transaction.setUpdatedAt(LocalDateTime.now());
-        transactionRepository.save(transaction);
+        checkOwnership(debt, user);
 
         return debtMapper.toDto(debt);
     }
 
     @Override
     @Transactional
-    public void removeById(Long id) {
-        findById(id);
-        var transaction = transactionRepository.findByDebtId(id);
+    public DebtDto payDebt(Long id, PayDebtDto dto) {
 
-        System.out.println("Transaction found: " + transaction.isPresent());
+        UserEntity user = getLoggedUser();
 
-        transactionRepository.deleteByDebtId(id);
-        debtRepository.deleteById(id);
+        DebtEntity debt = debtRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Debt not found"));
+
+        checkOwnership(debt, user);
+
+        double payAmount = dto.getAmount();
+
+        if (payAmount <= 0)
+            throw new RuntimeException("Invalid amount");
+
+        if (payAmount > debt.getRemainingAmount())
+            throw new RuntimeException("Too much payment");
+
+        // 🔥 UPDATE DEBT
+        debt.setRemainingAmount(debt.getRemainingAmount() - payAmount);
+        debt.setPaidAmount(debt.getPaidAmount() + payAmount);
+        debt.setLastPaymentAt(LocalDateTime.now());
+
+        debt.setStatus(debt.getRemainingAmount() == 0
+                ? DebtStatus.PAID
+                : DebtStatus.PENDING);
+
+        // 🔥 TRANSACTION
+        TransactionEntity tx = new TransactionEntity();
+        tx.setUser(user);
+        tx.setAmount(payAmount);
+        tx.setDate(LocalDate.now());
+        tx.setCategory(CategoryEnum.DEBT);
+        tx.setDescription("Debt payment");
+        tx.setDebt(debt);
+
+        tx.setType(debt.getType() == DebtTypeEnum.LENT
+                ? TransactionTypeEnum.INCOME
+                : TransactionTypeEnum.EXPENSE);
+
+        transactionRepository.save(tx);
+
+        debtRepository.save(debt);
+
+        return debtMapper.toDto(debt);
     }
 
+    @Override
+    public DebtDto update(Long id, UpdateDebtDto dto) {
 
+        UserEntity user = getLoggedUser();
+
+        DebtEntity debt = debtRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Debt not found"));
+
+        checkOwnership(debt, user);
+
+        if (dto.getAmount() < debt.getAmount()) {
+            throw new RuntimeException("New Amount must be greater than or equal to the current amount");
+        }
+
+        debt.setAmount(dto.getAmount());
+        debt.setPerson(dto.getPerson());
+        debt.setDescription(dto.getDescription());
+        debt.setType(dto.getType());
+        debt.setDate(dto.getDate());
+        debt.setUpdatedAt(LocalDateTime.now());
+
+        double paid = debt.getPaidAmount();
+        double remaining = dto.getAmount() - paid;
+
+        debt.setRemainingAmount(Math.max(remaining, 0));
+
+
+        return debtMapper.toDto(debtRepository.save(debt));
+    }
+
+    @Override
+    public void removeById(Long id) {
+
+        UserEntity user = getLoggedUser();
+
+        DebtEntity debt = debtRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Debt not found"));
+
+        checkOwnership(debt, user);
+
+        debtRepository.deleteById(id);
+    }
 }

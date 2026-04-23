@@ -1,9 +1,11 @@
 package org.example.incomeandexpensebackend.controllers;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.incomeandexpensebackend.dtos.debt.DebtDto;
+import org.example.incomeandexpensebackend.dtos.debt.PayDebtDto;
+import org.example.incomeandexpensebackend.dtos.debt.UpdateDebtDto;
 import org.example.incomeandexpensebackend.services.interfaces.DebtService;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -12,38 +14,39 @@ import java.util.List;
 @RequestMapping("/api/v1/debts")
 @RequiredArgsConstructor
 public class DebtsController {
-    private final DebtService service;
+
+    private final DebtService debtService;
+
+    @PostMapping
+    public DebtDto create(@RequestBody DebtDto dto) {
+        return debtService.create(dto);
+    }
 
     @GetMapping
-    public ResponseEntity<List<DebtDto>> getAllDebts() {
-        return ResponseEntity.ok(service.findAll());
+    public List<DebtDto> getAll() {
+        return debtService.findAll();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<DebtDto> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(service.findById(id));
+    public DebtDto getById(@PathVariable Long id) {
+        return debtService.findById(id);
     }
 
-    @PostMapping("/add")
-    public ResponseEntity<DebtDto> add(@RequestBody DebtDto dto) {
-        return ResponseEntity.ok(service.create(dto));
-    }
-
-    @PutMapping("/edit/{id}")
-    public ResponseEntity<DebtDto> editById(@PathVariable Long id, @RequestBody DebtDto dto) {
-        return ResponseEntity.ok(service.update(id, dto));
+    // 🔥 PAY ENDPOINT
+    @PostMapping("/{id}/pay")
+    public DebtDto pay(@PathVariable Long id,
+                       @RequestBody PayDebtDto dto) {
+        return debtService.payDebt(id, dto);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> removeById(@PathVariable Long id) {
-        service.removeById(id);
-        return ResponseEntity.noContent().build();
+    public void delete(@PathVariable Long id) {
+        debtService.removeById(id);
     }
 
-    @GetMapping("/default/objs")
-    public DebtDto defaultCreate() {
-        return new DebtDto();
+    @PutMapping("/{id}")
+    public DebtDto update(@PathVariable Long id,
+                          @RequestBody @Valid UpdateDebtDto dto) {
+        return debtService.update(id, dto);
     }
-
-
 }

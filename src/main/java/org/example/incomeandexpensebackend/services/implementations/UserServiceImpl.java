@@ -3,10 +3,7 @@ package org.example.incomeandexpensebackend.services.implementations;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.example.incomeandexpensebackend.dtos.user.CreateUserDto;
-import org.example.incomeandexpensebackend.dtos.user.UpdateUserDto;
-import org.example.incomeandexpensebackend.dtos.user.UserDetailsDto;
-import org.example.incomeandexpensebackend.dtos.user.UserListingDto;
+import org.example.incomeandexpensebackend.dtos.user.*;
 import org.example.incomeandexpensebackend.entities.UserEntity;
 import org.example.incomeandexpensebackend.enums.RoleEnum;
 import org.example.incomeandexpensebackend.exceptions.EmailExistsException;
@@ -17,6 +14,7 @@ import org.example.incomeandexpensebackend.repositories.TransactionRepository;
 import org.example.incomeandexpensebackend.repositories.UserRepository;
 import org.example.incomeandexpensebackend.services.interfaces.AuthService;
 import org.example.incomeandexpensebackend.services.interfaces.UserService;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -101,5 +99,22 @@ public class UserServiceImpl implements UserService {
         transactionRepository.deleteAll(user.getTransactions());
 
         userRepository.delete(user);
+    }
+
+    @Override
+    public UpdateSelfDto updateSelf(UpdateSelfDto dto) {
+        String currentUserName = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        var user = userRepository.findByEmail(currentUserName)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+
+        user.setFirstName(dto.getFirstName());
+        user.setLastName(dto.getLastName());
+        user.setEmail(dto.getEmail());
+        user.setPhoneNumber(dto.getPhoneNumber());
+
+
+        var updatedUser = userRepository.save(user);
+        return userMapper.toUpdateSelfDto(updatedUser);
     }
 }

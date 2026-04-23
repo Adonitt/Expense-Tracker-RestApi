@@ -10,44 +10,46 @@ import org.example.incomeandexpensebackend.enums.DebtTypeEnum;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-
-@AllArgsConstructor
-@NoArgsConstructor
+import java.util.List;
+@Entity(name = "debts")
 @Getter
 @Setter
-@Entity(name = "debts")
+@AllArgsConstructor
+@NoArgsConstructor
 public class DebtEntity {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "amount")
     private double amount;
 
-    @Column(name = "person")
+    private double remainingAmount;
+
+    private double paidAmount;
+
     private String person;
 
-    @Column(name = "description")
     private String description;
 
-    @Column(name = "type")
     @Enumerated(EnumType.STRING)
     private DebtTypeEnum type;
 
-    @Column(name = "status")
     @Enumerated(EnumType.STRING)
     private DebtStatus status;
 
-    @Column(name = "date")
     private LocalDate date;
 
-    @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @OneToOne(mappedBy = "debt", cascade = CascadeType.ALL)
-    private TransactionEntity transaction;
+    @OneToMany(mappedBy = "debt", cascade = CascadeType.ALL)
+    private List<TransactionEntity> transactions;
 
+    private LocalDateTime lastPaymentAt;
+
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private UserEntity user;
 }

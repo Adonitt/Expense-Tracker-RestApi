@@ -1,16 +1,14 @@
 package org.example.incomeandexpensebackend.controllers;
 
 import lombok.RequiredArgsConstructor;
-import org.example.incomeandexpensebackend.dtos.user.CreateUserDto;
-import org.example.incomeandexpensebackend.dtos.user.UpdateUserDto;
-import org.example.incomeandexpensebackend.dtos.user.UserDetailsDto;
-import org.example.incomeandexpensebackend.dtos.user.UserListingDto;
+import org.example.incomeandexpensebackend.dtos.user.*;
 import org.example.incomeandexpensebackend.entities.UserEntity;
 import org.example.incomeandexpensebackend.enums.RoleEnum;
 import org.example.incomeandexpensebackend.exceptions.UnauthorizedException;
 import org.example.incomeandexpensebackend.services.interfaces.AuthService;
 import org.example.incomeandexpensebackend.services.interfaces.UserService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -51,6 +49,12 @@ public class UserController {
     public ResponseEntity<Void> removeById(@PathVariable Long id) {
         service.removeById(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/update-self")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<UpdateSelfDto> updateSelf(@RequestBody UpdateSelfDto dto) {
+        return ResponseEntity.ok(service.updateSelf(dto));
     }
 
 }

@@ -10,12 +10,11 @@ import org.example.incomeandexpensebackend.enums.TransactionTypeEnum;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-
+@Entity(name = "transactions")
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-@Entity(name = "transactions")
 public class TransactionEntity {
 
     @Id
@@ -23,32 +22,25 @@ public class TransactionEntity {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "user_id")
     private UserEntity user;
 
-    @Column(name = "amount")
     private double amount;
 
-    @Column(name = "type")
     @Enumerated(EnumType.STRING)
     private TransactionTypeEnum type;
 
     @Enumerated(EnumType.STRING)
     private CategoryEnum category;
 
-    @Column(name = "description")
     private String description;
 
-    @Column(name = "date")
     private LocalDate date;
 
-    @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "debt_id")
     private DebtEntity debt;
 }

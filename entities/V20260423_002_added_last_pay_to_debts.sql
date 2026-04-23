@@ -1,0 +1,2 @@
+ALTER TABLE debts
+    ADD last_payment_at TIMESTAMP WITHOUT TIME ZONE;
