@@ -2,9 +2,7 @@ package org.example.incomeandexpensebackend.controllers;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.example.incomeandexpensebackend.dtos.auth.AuthResponseDto;
-import org.example.incomeandexpensebackend.dtos.auth.ChangePasswordDto;
-import org.example.incomeandexpensebackend.dtos.auth.LoginDto;
+import org.example.incomeandexpensebackend.dtos.auth.*;
 import org.example.incomeandexpensebackend.dtos.user.CreateUserDto;
 import org.example.incomeandexpensebackend.services.interfaces.AuthService;
 import org.example.incomeandexpensebackend.services.interfaces.UserService;
@@ -39,6 +37,29 @@ public class AuthController {
         Map<String, String> resp = new HashMap<>();
         resp.put("message", "Password changed successfully");
         return ResponseEntity.ok(resp);
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody ForgotPasswordRequestDto dto) {
+        authService.forgotPassword(dto.getEmail());
+        System.out.println("EMAIL SENT TO: " + dto.getEmail());
+        return ResponseEntity.ok(Map.of(
+                "message", "If email exists, reset link sent"
+        ));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest request) {
+
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            return ResponseEntity.badRequest().body("Passwords do not match");
+        }
+
+        authService.resetPassword(request.getToken(), request.getNewPassword(), request.getConfirmPassword());
+
+        return ResponseEntity.ok(Map.of(
+                "message", "Password updated"
+        ));
     }
 
 }

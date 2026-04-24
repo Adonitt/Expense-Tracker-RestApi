@@ -17,4 +17,9 @@ public interface AuthService {
     Long getLoggedInUserId();
 
     String getLoggedInUserRole();
+
+    public void forgotPassword(String email);
+
+
+    public void resetPassword(String token, String newPassword, String confirmPassword);
 }

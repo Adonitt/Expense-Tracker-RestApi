@@ -10,6 +10,7 @@ import org.example.incomeandexpensebackend.exceptions.EmailExistsException;
 import org.example.incomeandexpensebackend.exceptions.PasswordsDoNotMatchException;
 import org.example.incomeandexpensebackend.exceptions.UnauthorizedException;
 import org.example.incomeandexpensebackend.mappers.UserMapper;
+import org.example.incomeandexpensebackend.repositories.PasswordResetTokenRepository;
 import org.example.incomeandexpensebackend.repositories.TransactionRepository;
 import org.example.incomeandexpensebackend.repositories.UserRepository;
 import org.example.incomeandexpensebackend.services.interfaces.AuthService;
@@ -29,6 +30,7 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final TransactionRepository transactionRepository;
     private final AuthService authService;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
 
 
     @Override
@@ -97,6 +99,7 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
         transactionRepository.deleteAll(user.getTransactions());
+        passwordResetTokenRepository.deleteByUser(user);
 
         userRepository.delete(user);
     }
