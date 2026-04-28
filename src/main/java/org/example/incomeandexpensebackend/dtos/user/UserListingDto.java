@@ -20,5 +20,4 @@ public class UserListingDto {
     private Boolean isActive;
 
     private RoleEnum role;
-
 }

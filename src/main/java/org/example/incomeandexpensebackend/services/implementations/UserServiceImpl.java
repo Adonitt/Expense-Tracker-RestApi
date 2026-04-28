@@ -45,7 +45,6 @@ public class UserServiceImpl implements UserService {
             throw new EmailExistsException("Email already exists");
         }
 
-
         var entity = userMapper.toEntity(dto);
         entity.setPassword(passwordEncoder.encode(dto.getPassword()));
         entity.setRole(RoleEnum.USER);

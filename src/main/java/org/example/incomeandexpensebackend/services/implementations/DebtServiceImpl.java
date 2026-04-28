@@ -9,6 +9,7 @@ import org.example.incomeandexpensebackend.entities.DebtEntity;
 import org.example.incomeandexpensebackend.entities.TransactionEntity;
 import org.example.incomeandexpensebackend.entities.UserEntity;
 import org.example.incomeandexpensebackend.enums.*;
+import org.example.incomeandexpensebackend.exceptions.UnauthorizedException;
 import org.example.incomeandexpensebackend.mappers.DebtMapper;
 import org.example.incomeandexpensebackend.repositories.DebtRepository;
 import org.example.incomeandexpensebackend.repositories.TransactionRepository;
@@ -31,14 +32,12 @@ public class DebtServiceImpl implements DebtService {
     private final AuthService authService;
     private final UserRepository userRepository;
 
-    // 🔥 GET LOGGED USER
     private UserEntity getLoggedUser() {
         String email = authService.getLoggedInUserEmail();
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }
 
-    // 🔥 SECURITY CHECK
     private void checkOwnership(DebtEntity debt, UserEntity user) {
         if (user.getRole() != RoleEnum.ADMIN &&
                 !debt.getUser().getId().equals(user.getId())) {
@@ -51,8 +50,12 @@ public class DebtServiceImpl implements DebtService {
 
         UserEntity user = getLoggedUser();
 
+        if (!Boolean.TRUE.equals(user.getIsActive())) {
+            throw new UnauthorizedException("You are not allowed to add a debt as you are not active! Please contact support!");
+        }
+
         DebtEntity debt = new DebtEntity();
-        debt.setUser(user); // 🔥 IMPORTANT
+        debt.setUser(user);
         debt.setAmount(dto.getAmount());
         debt.setRemainingAmount(dto.getAmount());
         debt.setPaidAmount(0);
@@ -65,7 +68,6 @@ public class DebtServiceImpl implements DebtService {
 
         DebtEntity savedDebt = debtRepository.save(debt);
 
-        // 🔥 INITIAL TRANSACTION
         TransactionEntity tx = new TransactionEntity();
         tx.setUser(user);
         tx.setAmount(dto.getAmount());
@@ -117,6 +119,9 @@ public class DebtServiceImpl implements DebtService {
     public DebtDto payDebt(Long id, PayDebtDto dto) {
 
         UserEntity user = getLoggedUser();
+        if (!Boolean.TRUE.equals(user.getIsActive())) {
+            throw new UnauthorizedException("You are not allowed to pay debt as you are not active! Please contact support!");
+        }
 
         DebtEntity debt = debtRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Debt not found"));
@@ -131,7 +136,6 @@ public class DebtServiceImpl implements DebtService {
         if (payAmount > debt.getRemainingAmount())
             throw new RuntimeException("Too much payment");
 
-        // 🔥 UPDATE DEBT
         debt.setRemainingAmount(debt.getRemainingAmount() - payAmount);
         debt.setPaidAmount(debt.getPaidAmount() + payAmount);
         debt.setLastPaymentAt(LocalDateTime.now());
@@ -140,7 +144,6 @@ public class DebtServiceImpl implements DebtService {
                 ? DebtStatus.PAID
                 : DebtStatus.PENDING);
 
-        // 🔥 TRANSACTION
         TransactionEntity tx = new TransactionEntity();
         tx.setUser(user);
         tx.setAmount(payAmount);
@@ -164,7 +167,9 @@ public class DebtServiceImpl implements DebtService {
     public DebtDto update(Long id, UpdateDebtDto dto) {
 
         UserEntity user = getLoggedUser();
-
+        if (!Boolean.TRUE.equals(user.getIsActive())) {
+            throw new UnauthorizedException("You are not allowed to update a debt as you are not active! Please contact support!");
+        }
         DebtEntity debt = debtRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Debt not found"));
 
@@ -194,7 +199,9 @@ public class DebtServiceImpl implements DebtService {
     public void removeById(Long id) {
 
         UserEntity user = getLoggedUser();
-
+        if (!Boolean.TRUE.equals(user.getIsActive())) {
+            throw new UnauthorizedException("You are not allowed to delete a debt! Please contact support!");
+        }
         DebtEntity debt = debtRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Debt not found"));
 

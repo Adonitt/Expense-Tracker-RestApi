@@ -48,7 +48,8 @@ public class AuthServiceImpl implements AuthService {
                 user.getEmail(),
                 user.getFirstName(),
                 user.getLastName(),
-                String.valueOf(user.getRole())
+                String.valueOf(user.getRole()),
+                user.getIsActive()
         );
 
         return new AuthResponseDto(token, user.getId(), user.getEmail(), user.getFirstName());

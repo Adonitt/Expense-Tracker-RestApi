@@ -37,6 +37,10 @@ public class TransactionServiceImpl implements TransactionService {
         String email = authService.getLoggedInUserEmail();
         UserEntity user = userRepository.findByEmail(email).orElseThrow(() -> new EntityNotFoundException("User not found"));
 
+        if (!Boolean.TRUE.equals(user.getIsActive())) {
+            throw new UnauthorizedException("You are not allowed to add a transaction as you are not active! Please contact support!");
+        }
+
         var entity = mapper.toEntity(dto);
 
         if (entity.getDate().isAfter(LocalDate.now())) {
@@ -96,6 +100,10 @@ public class TransactionServiceImpl implements TransactionService {
             throw new DebtTransactionException("This is a DEBT and cannot be updated as transaction, only in the DEBT section!");
         }
 
+        if (!Boolean.TRUE.equals(entity.getUser().getIsActive())) {
+            throw new UnauthorizedException("You are not allowed to update a transaction as you are not active! Please contact support!");
+        }
+
         if (dto.getDate().isAfter(LocalDate.now())) {
             throw new DateAllowanceException("It is not allowed to add a transaction for next months!");
         }
@@ -115,12 +123,17 @@ public class TransactionServiceImpl implements TransactionService {
     public void removeById(Long id) {
         var transaction = transactionRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Transaction not found"));
 
+        if (!Boolean.TRUE.equals(transaction.getUser().getIsActive())) {
+            throw new UnauthorizedException("You are not allowed to delete a transaction as you are not active! Please contact support!");
+        }
+
         if (transaction.getCategory() == CategoryEnum.DEBT) {
             throw new DebtTransactionException("This is a DEBT and cannot be deleted as transaction, only in the DEBT section!");
         }
+
+
         transactionRepository.deleteById(id);
     }
-
 
 
     @Override

@@ -47,7 +47,8 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
                 user.getEmail(),
                 user.getFirstName(),
                 user.getLastName(),
-                String.valueOf(user.getRole())
+                String.valueOf(user.getRole()),
+                user.getIsActive()
         );
 
         String frontendUrl = System.getenv("FRONTEND_URL");
