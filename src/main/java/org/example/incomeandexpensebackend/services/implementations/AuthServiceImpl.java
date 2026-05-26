@@ -37,10 +37,10 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public AuthResponseDto login(LoginDto dto) {
-        UserEntity user = userRepository.findByEmail(dto.getEmail()).orElseThrow(() -> new UserNotFoundException("User with this email doesn't exist!"));
+        UserEntity user = userRepository.findByEmail(dto.getEmail()).orElseThrow(() -> new UserNotFoundException("Nuk ekziston nje user me kete email!"));
 
         if (!passwordEncoder.matches(dto.getPassword(), user.getPassword())) {
-            throw new UnauthorizedException("Invalid email or password");
+            throw new UnauthorizedException("Email ose password i gabuar!");
         }
 
         String token = jwtUtil.generateToken(
@@ -58,7 +58,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public UserEntity validateToken(String token) {
         String email = jwtUtil.validateTokenAndGetEmail(token);
-        return userRepository.findByEmail(email).orElseThrow(() -> new EntityNotFoundException("User not found"));
+        return userRepository.findByEmail(email).orElseThrow(() -> new EntityNotFoundException("User nuk eshte gjetur!"));
     }
 
     @Override
@@ -78,20 +78,20 @@ public class AuthServiceImpl implements AuthService {
     public void changePassword(ChangePasswordDto req, String userEmail) {
         var userExists = userRepository.findByEmail(userEmail);
 
-        if (userExists.isEmpty()) throw new UserNotFoundException("User not found");
+        if (userExists.isEmpty()) throw new UserNotFoundException("User nuk eshte gjetur!");
 
         UserEntity user = userExists.get();
 
         if (!passwordEncoder.matches(req.getOldPassword(), user.getPassword())) {
-            throw new UnauthorizedException("Invalid old password");
+            throw new UnauthorizedException("Passwordi i vjetër i gabuar!");
         }
 
         if (!req.getNewPassword().equals(req.getConfirmPassword())) {
-            throw new UnauthorizedException("New password and confirm password don't match!");
+            throw new UnauthorizedException("Passwordet nuk jane të njejta!");
         }
 
         if (req.getNewPassword().equals(req.getOldPassword())) {
-            throw new UnauthorizedException("New password cannot be the same as the old password!");
+            throw new UnauthorizedException("Passwordi i ri nuk ben te jete i njejte me ate te vjetër!");
         }
 
         user.setPassword(passwordEncoder.encode(req.getNewPassword()));
@@ -147,22 +147,22 @@ public class AuthServiceImpl implements AuthService {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setTo(to);
-            message.setSubject("Reset Password");
-            message.setText("Click here: " + link);
+            message.setSubject("Ndrysho Passwordin");
+            message.setText("Kliko ketu: " + link);
 
             javaMailSender.send(message);
 
-            System.out.println("EMAIL SENT SUCCESSFULLY");
+            System.out.println("EMAIL U DERGUA ME SUKSES");
         } catch (Exception e) {
             e.printStackTrace();
-            System.out.println("EMAIL FAILED: " + e.getMessage());
+            System.out.println("EMAIL DESHTOI: " + e.getMessage());
         }
     }
 
 
     public void resetPassword(String token, String newPassword, String confirmPassword) {
         if (!newPassword.equals(confirmPassword)) {
-            throw new RuntimeException("Passwords do not match");
+            throw new RuntimeException("Passwordet nuk jane te njejta");
         }
 
         PasswordResetTokenEntity resetToken = passwordResetTokenRepository.findByToken(token)

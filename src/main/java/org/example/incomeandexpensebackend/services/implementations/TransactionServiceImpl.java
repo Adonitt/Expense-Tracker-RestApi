@@ -35,22 +35,26 @@ public class TransactionServiceImpl implements TransactionService {
     @Override
     public CreateTransactionDto create(CreateTransactionDto dto) {
         String email = authService.getLoggedInUserEmail();
-        UserEntity user = userRepository.findByEmail(email).orElseThrow(() -> new EntityNotFoundException("User not found"));
+        UserEntity user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new EntityNotFoundException("Përdoruesi nuk u gjet"));
 
         if (!Boolean.TRUE.equals(user.getIsActive())) {
-            throw new UnauthorizedException("You are not allowed to add a transaction as you are not active! Please contact support!");
+            throw new UnauthorizedException(
+                    "Nuk ju lejohet të shtoni një transaksion sepse llogaria juaj nuk është aktive! Ju lutemi kontaktoni mbështetjen."
+            );
         }
 
         var entity = mapper.toEntity(dto);
 
         if (entity.getDate().isAfter(LocalDate.now())) {
-            throw new DateAllowanceException("It is not allowed to add a transaction for next months!");
+            throw new DateAllowanceException(
+                    "Nuk lejohet të shtoni transaksione për muajt e ardhshëm!"
+            );
         }
 
         entity.setUser(user);
         entity.setCreatedAt(LocalDateTime.now());
         user.addTransaction(entity);
-
 
         var saved = transactionRepository.save(entity);
         return mapper.toCreateDto(saved);
@@ -60,7 +64,8 @@ public class TransactionServiceImpl implements TransactionService {
     public List<TransactionListingDto> findAll() {
 
         String email = authService.getLoggedInUserEmail();
-        UserEntity loggedInUser = userRepository.findByEmail(email).orElseThrow(() -> new EntityNotFoundException("User not found"));
+        UserEntity loggedInUser = userRepository.findByEmail(email)
+                .orElseThrow(() -> new EntityNotFoundException("Përdoruesi nuk u gjet"));
 
         List<TransactionEntity> transactionsList;
 
@@ -76,36 +81,37 @@ public class TransactionServiceImpl implements TransactionService {
     @Override
     public TransactionDetailsDto findById(Long id) {
         var transaction = transactionRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Transaction not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Transaksioni nuk u gjet"));
 
         String email = authService.getLoggedInUserEmail();
         UserEntity loggedInUser = userRepository.findByEmail(email)
-                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Përdoruesi nuk u gjet"));
 
         if (loggedInUser.getRole() != RoleEnum.ADMIN &&
                 !transaction.getUser().getId().equals(loggedInUser.getId())) {
-            throw new UnauthorizedException("You are not allowed to access this transaction");
+            throw new UnauthorizedException("Nuk ju lejohet të aksesoni këtë transaksion");
         }
 
         return mapper.toTransactionDetailsDto(transaction);
     }
 
-
     @Override
     public UpdateTransactionDto update(Long id, UpdateTransactionDto dto) {
 
-        TransactionEntity entity = transactionRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Transaction not found"));
+        TransactionEntity entity = transactionRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Transaksioni nuk u gjet"));
 
-        if (entity.getCategory() == CategoryEnum.DEBT) {
-            throw new DebtTransactionException("This is a DEBT and cannot be updated as transaction, only in the DEBT section!");
-        }
 
         if (!Boolean.TRUE.equals(entity.getUser().getIsActive())) {
-            throw new UnauthorizedException("You are not allowed to update a transaction as you are not active! Please contact support!");
+            throw new UnauthorizedException(
+                    "Nuk ju lejohet të përditësoni një transaksion sepse llogaria juaj nuk është aktive! Ju lutemi kontaktoni mbështetjen."
+            );
         }
 
         if (dto.getDate().isAfter(LocalDate.now())) {
-            throw new DateAllowanceException("It is not allowed to add a transaction for next months!");
+            throw new DateAllowanceException(
+                    "Nuk lejohet të shtoni transaksione për muajt e ardhshëm!"
+            );
         }
 
         entity.setAmount(dto.getAmount());
@@ -121,27 +127,26 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Override
     public void removeById(Long id) {
-        var transaction = transactionRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Transaction not found"));
+        var transaction = transactionRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Transaksioni nuk u gjet"));
 
         if (!Boolean.TRUE.equals(transaction.getUser().getIsActive())) {
-            throw new UnauthorizedException("You are not allowed to delete a transaction as you are not active! Please contact support!");
+            throw new UnauthorizedException(
+                    "Nuk ju lejohet të fshini një transaksion sepse llogaria juaj nuk është aktive! Ju lutemi kontaktoni mbështetjen."
+            );
         }
 
-        if (transaction.getCategory() == CategoryEnum.DEBT) {
-            throw new DebtTransactionException("This is a DEBT and cannot be deleted as transaction, only in the DEBT section!");
-        }
 
 
         transactionRepository.deleteById(id);
     }
-
 
     @Override
     public List<TransactionListingDto> findByDateRange(LocalDate fromDate, LocalDate toDate) {
 
         String email = authService.getLoggedInUserEmail();
         UserEntity user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Përdoruesi nuk u gjet"));
 
         List<TransactionEntity> transactions;
 

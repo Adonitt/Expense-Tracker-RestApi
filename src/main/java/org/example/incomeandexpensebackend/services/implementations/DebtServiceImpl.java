@@ -35,13 +35,13 @@ public class DebtServiceImpl implements DebtService {
     private UserEntity getLoggedUser() {
         String email = authService.getLoggedInUserEmail();
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException("Përdoruesi nuk u gjet"));
     }
 
     private void checkOwnership(DebtEntity debt, UserEntity user) {
         if (user.getRole() != RoleEnum.ADMIN &&
                 !debt.getUser().getId().equals(user.getId())) {
-            throw new RuntimeException("Unauthorized access");
+            throw new RuntimeException("Nuk keni të drejtë qasjeje në këtë borxh");
         }
     }
 
@@ -51,7 +51,9 @@ public class DebtServiceImpl implements DebtService {
         UserEntity user = getLoggedUser();
 
         if (!Boolean.TRUE.equals(user.getIsActive())) {
-            throw new UnauthorizedException("You are not allowed to add a debt as you are not active! Please contact support!");
+            throw new UnauthorizedException(
+                    "Nuk ju lejohet të shtoni një borxh sepse llogaria juaj nuk është aktive! Ju lutemi kontaktoni mbështetjen."
+            );
         }
 
         DebtEntity debt = new DebtEntity();
@@ -72,7 +74,7 @@ public class DebtServiceImpl implements DebtService {
         tx.setUser(user);
         tx.setAmount(dto.getAmount());
         tx.setDate(dto.getDate());
-        tx.setDescription("Initial debt");
+        tx.setDescription("Borxhi fillestar");
         tx.setCategory(CategoryEnum.DEBT);
         tx.setDebt(savedDebt);
 
@@ -107,7 +109,7 @@ public class DebtServiceImpl implements DebtService {
         UserEntity user = getLoggedUser();
 
         DebtEntity debt = debtRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Debt not found"));
+                .orElseThrow(() -> new RuntimeException("Borxhi nuk u gjet"));
 
         checkOwnership(debt, user);
 
@@ -119,22 +121,27 @@ public class DebtServiceImpl implements DebtService {
     public DebtDto payDebt(Long id, PayDebtDto dto) {
 
         UserEntity user = getLoggedUser();
+
         if (!Boolean.TRUE.equals(user.getIsActive())) {
-            throw new UnauthorizedException("You are not allowed to pay debt as you are not active! Please contact support!");
+            throw new UnauthorizedException(
+                    "Nuk ju lejohet të paguani borxhin sepse llogaria juaj nuk është aktive! Ju lutemi kontaktoni mbështetjen."
+            );
         }
 
         DebtEntity debt = debtRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Debt not found"));
+                .orElseThrow(() -> new RuntimeException("Borxhi nuk u gjet"));
 
         checkOwnership(debt, user);
 
         double payAmount = dto.getAmount();
 
-        if (payAmount <= 0)
-            throw new RuntimeException("Invalid amount");
+        if (payAmount <= 0) {
+            throw new RuntimeException("Shuma nuk është valide");
+        }
 
-        if (payAmount > debt.getRemainingAmount())
-            throw new RuntimeException("Too much payment");
+        if (payAmount > debt.getRemainingAmount()) {
+            throw new RuntimeException("Shuma e pagesës është më e madhe se shuma e mbetur");
+        }
 
         debt.setRemainingAmount(debt.getRemainingAmount() - payAmount);
         debt.setPaidAmount(debt.getPaidAmount() + payAmount);
@@ -149,7 +156,7 @@ public class DebtServiceImpl implements DebtService {
         tx.setAmount(payAmount);
         tx.setDate(LocalDate.now());
         tx.setCategory(CategoryEnum.DEBT);
-        tx.setDescription("Debt payment");
+        tx.setDescription("Pagesë e borxhit");
         tx.setDebt(debt);
 
         tx.setType(debt.getType() == DebtTypeEnum.LENT
@@ -167,16 +174,22 @@ public class DebtServiceImpl implements DebtService {
     public DebtDto update(Long id, UpdateDebtDto dto) {
 
         UserEntity user = getLoggedUser();
+
         if (!Boolean.TRUE.equals(user.getIsActive())) {
-            throw new UnauthorizedException("You are not allowed to update a debt as you are not active! Please contact support!");
+            throw new UnauthorizedException(
+                    "Nuk ju lejohet të përditësoni një borxh sepse llogaria juaj nuk është aktive! Ju lutemi kontaktoni mbështetjen."
+            );
         }
+
         DebtEntity debt = debtRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Debt not found"));
+                .orElseThrow(() -> new RuntimeException("Borxhi nuk u gjet"));
 
         checkOwnership(debt, user);
 
         if (dto.getAmount() < debt.getAmount()) {
-            throw new RuntimeException("New Amount must be greater than or equal to the current amount");
+            throw new RuntimeException(
+                    "Shuma e re duhet të jetë më e madhe ose e barabartë me shumën aktuale"
+            );
         }
 
         debt.setAmount(dto.getAmount());
@@ -191,7 +204,6 @@ public class DebtServiceImpl implements DebtService {
 
         debt.setRemainingAmount(Math.max(remaining, 0));
 
-
         return debtMapper.toDto(debtRepository.save(debt));
     }
 
@@ -199,11 +211,15 @@ public class DebtServiceImpl implements DebtService {
     public void removeById(Long id) {
 
         UserEntity user = getLoggedUser();
+
         if (!Boolean.TRUE.equals(user.getIsActive())) {
-            throw new UnauthorizedException("You are not allowed to delete a debt! Please contact support!");
+            throw new UnauthorizedException(
+                    "Nuk ju lejohet të fshini një borxh! Ju lutemi kontaktoni mbështetjen."
+            );
         }
+
         DebtEntity debt = debtRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Debt not found"));
+                .orElseThrow(() -> new RuntimeException("Borxhi nuk u gjet"));
 
         checkOwnership(debt, user);
 

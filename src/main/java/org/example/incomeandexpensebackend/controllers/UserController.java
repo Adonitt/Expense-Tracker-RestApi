@@ -34,7 +34,7 @@ public class UserController {
         UserDetailsDto userDetails = service.findById(id);
 
         if (!role.equals("ADMIN") && !loggedInUserId.equals(id)) {
-            throw new UnauthorizedException("You can only view your own data");
+            throw new UnauthorizedException("Ti mund te shikosh vetem te dhenat tuaja!");
         }
 
         return ResponseEntity.ok(userDetails);

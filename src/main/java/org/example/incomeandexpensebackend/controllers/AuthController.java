@@ -35,7 +35,7 @@ public class AuthController {
         String email = authService.getLoggedInUserEmail();
         authService.changePassword(request, email);
         Map<String, String> resp = new HashMap<>();
-        resp.put("message", "Password changed successfully");
+        resp.put("message", "Passwordi eshte ndryshuar me sukses.");
         return ResponseEntity.ok(resp);
     }
 
@@ -44,7 +44,7 @@ public class AuthController {
         authService.forgotPassword(dto.getEmail());
         System.out.println("EMAIL SENT TO: " + dto.getEmail());
         return ResponseEntity.ok(Map.of(
-                "message", "If email exists, reset link sent"
+                "message", "Nese email ekziston, reset link eshte derguar."
         ));
     }
 
@@ -52,13 +52,13 @@ public class AuthController {
     public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest request) {
 
         if (!request.getNewPassword().equals(request.getConfirmPassword())) {
-            return ResponseEntity.badRequest().body("Passwords do not match");
+            return ResponseEntity.badRequest().body("Passwords nuk jane te njejta!");
         }
 
         authService.resetPassword(request.getToken(), request.getNewPassword(), request.getConfirmPassword());
 
         return ResponseEntity.ok(Map.of(
-                "message", "Password updated"
+                "message", "Passwordi eshte ndryshuar me sukses."
         ));
     }
 

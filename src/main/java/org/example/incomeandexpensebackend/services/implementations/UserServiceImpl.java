@@ -25,6 +25,7 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
+
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
@@ -32,17 +33,16 @@ public class UserServiceImpl implements UserService {
     private final AuthService authService;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
 
-
     @Override
     public CreateUserDto create(CreateUserDto dto) {
 
         if (!dto.getPassword().equals(dto.getConfirmPassword())) {
-            throw new PasswordsDoNotMatchException("Passwords do not match");
+            throw new PasswordsDoNotMatchException("Fjalëkalimet nuk përputhen");
         }
 
         var existing = userRepository.findByEmail(dto.getEmail());
         if (existing.isPresent()) {
-            throw new EmailExistsException("Email already exists");
+            throw new EmailExistsException("Email-i tashmë ekziston");
         }
 
         var entity = userMapper.toEntity(dto);
@@ -64,13 +64,13 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserDetailsDto findById(Long id) {
         UserEntity user = userRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Përdoruesi nuk u gjet"));
 
         Long loggedInUserId = authService.getLoggedInUserId();
         String role = authService.getLoggedInUserRole();
 
         if (!role.equals("ADMIN") && !loggedInUserId.equals(id)) {
-            throw new UnauthorizedException("You are not allowed to view this user");
+            throw new UnauthorizedException("Nuk ju lejohet të shikoni këtë përdorues");
         }
 
         return userMapper.toUserDetailsDto(user);
@@ -78,7 +78,9 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UpdateUserDto update(Long id, UpdateUserDto dto) {
-        var user = userRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("User not found"));
+
+        var user = userRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Përdoruesi nuk u gjet"));
 
         user.setFirstName(dto.getFirstName());
         user.setLastName(dto.getLastName());
@@ -94,8 +96,9 @@ public class UserServiceImpl implements UserService {
     @Transactional
     @Override
     public void removeById(Long id) {
+
         UserEntity user = userRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Përdoruesi nuk u gjet"));
 
         transactionRepository.deleteAll(user.getTransactions());
         passwordResetTokenRepository.deleteByUser(user);
@@ -105,16 +108,16 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UpdateSelfDto updateSelf(UpdateSelfDto dto) {
+
         String currentUserName = SecurityContextHolder.getContext().getAuthentication().getName();
 
         var user = userRepository.findByEmail(currentUserName)
-                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Përdoruesi nuk u gjet"));
 
         user.setFirstName(dto.getFirstName());
         user.setLastName(dto.getLastName());
         user.setEmail(dto.getEmail());
         user.setPhoneNumber(dto.getPhoneNumber());
-
 
         var updatedUser = userRepository.save(user);
         return userMapper.toUpdateSelfDto(updatedUser);
